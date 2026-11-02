@@ -1,0 +1,12 @@
+{
+  "id": "nitingkgupta/demand-forecast-submit",
+  "title": "demand-forecast-submit",
+  "code_file": "submit.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_internet": "false",
+  "dataset_sources": ["nitingkgupta/store-demand-forecast-submission"],
+  "competition_sources": ["demand-forecasting-kernels-only"]
+}
