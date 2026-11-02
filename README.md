@@ -1,0 +1,80 @@
+# SmartDemand AI
+
+SmartDemand AI forecasts daily item sales for a store. The FastAPI service uses
+the trained XGBoost model and recent sales history to produce recursive
+forecasts.
+
+## Run locally
+
+Use Python 3.13. Install the API dependencies:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-api.txt
+```
+
+The service first looks for local artifacts at
+`models/xgboost_final_model.joblib` and `data/serving/history.csv`. To load the
+artifacts from S3 instead, set `S3_BUCKET`; the default object keys are
+`models/xgboost_final_model.joblib` and `serving/history.csv`. Override them
+with `MODEL_KEY` and `HISTORY_KEY` if needed. AWS credentials must be available
+through the standard AWS credential chain.
+
+Start the API:
+
+```powershell
+uvicorn api.main:app --reload
+```
+
+The service listens on `http://127.0.0.1:8000`. Interactive API documentation
+is available at `/docs`.
+
+## API
+
+`GET /health` reports whether the model and history loaded during application
+startup.
+
+`POST /forecast` accepts a store, item, and forecast horizon:
+
+```json
+{
+  "store": 1,
+  "item": 1,
+  "horizon_days": 7
+}
+```
+
+Store IDs must be from 1 to 10, item IDs from 1 to 50, and the horizon from 1
+to 90 days. The response includes one date and predicted sales value for each
+forecast day. Requests for store/item pairs absent from the serving history
+return HTTP 404.
+
+## Build and run the container
+
+From the repository root:
+
+```powershell
+docker build -f deployment/Dockerfile -t smartdemand-api .
+docker run --rm -p 8000:8000 `
+  -e S3_BUCKET=<your-artifact-bucket> `
+  -e AWS_REGION=ap-southeast-2 `
+  smartdemand-api
+```
+
+The container uses the AWS credential chain. In AWS, give its task or workload
+role read access to the two artifact objects. The repository CI workflow runs
+the API tests, builds and smoke-checks the image, then pushes `smartdemand-api`
+to ECR on pushes to `main`. The ECR repository must already exist, and the
+GitHub Actions secrets `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` must be
+configured for that account. The workflow publishes both the commit SHA tag
+and `latest`; it does not roll out a running service.
+
+## Project layout
+
+- `api/` — FastAPI application
+- `src/inference/` — feature creation and recursive forecasting
+- `src/data/` — data preparation, including serving-history generation
+- `src/models/` — model training and validation scripts
+- `deployment/` — API container image definition
+- `.github/workflows/ci.yml` — tests, image build, and ECR publishing
