@@ -4,6 +4,21 @@ SmartDemand AI forecasts daily item sales for a store. The FastAPI service uses
 the trained XGBoost model and recent sales history to produce recursive
 forecasts.
 
+## Kaggle result
+
+The recursive XGBoost submission for the Store Item Demand Forecasting
+Challenge contained 45,000 rows and passed the local checks for columns,
+missing values, duplicate IDs, test ID order, and nonnegative predictions.
+
+| Leaderboard | Score |
+| --- | ---: |
+| Public | 14.37320 |
+| Private | 12.95266 |
+
+These are the scores reported after submission. The validation metrics in
+`reports/xgboost/metrics.csv` are measured on the separate 90-day holdout and
+should not be compared directly with the Kaggle leaderboard score.
+
 ## Run locally
 
 Use Python 3.13. Install the API dependencies:
@@ -34,6 +49,12 @@ is available at `/docs`.
 
 `GET /health` reports whether the model and history loaded during application
 startup.
+
+`GET /metrics` exposes Prometheus metrics for request counts and latency, model
+readiness, requested forecast horizons, and predicted sales distributions. The
+HTTP metrics use the route template (rather than store or item IDs) to keep
+label cardinality bounded. Configure a Prometheus server to scrape
+`http://<service-host>:8000/metrics` for ongoing monitoring.
 
 `POST /forecast` accepts a store, item, and forecast horizon:
 
