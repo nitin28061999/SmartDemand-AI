@@ -120,11 +120,20 @@ GitHub Actions secrets `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` must be
 configured for that account. The workflow publishes both the commit SHA tag
 and `latest`; it does not roll out a running service.
 
+## AWS runtime deployment
+
+An ECS Express Mode deployment script and setup guide are available in
+`deployment/ecs-express/`. The script requires explicit network settings,
+defaults to private ingress, caps the service at one task, and supports
+PowerShell `-WhatIf`. The API has no authentication, so review the setup guide
+and AWS costs before creating a service; nothing in CI creates or updates the
+service.
+
 ## Project layout
 
 - `api/` — FastAPI application
 - `src/inference/` — feature creation and recursive forecasting
 - `src/data/` — data preparation, including serving-history generation
 - `src/models/` — model training and validation scripts
-- `deployment/` — API container image and local Prometheus/Grafana monitoring stack
+- `deployment/` — API image, local monitoring stack, and guarded ECS Express Mode deployment prep
 - `.github/workflows/ci.yml` — tests, image build, and ECR publishing
