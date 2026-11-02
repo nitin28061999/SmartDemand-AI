@@ -1,4 +1,5 @@
 import os
+import tempfile
 from pathlib import Path
 
 import joblib
@@ -6,8 +7,8 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-MODEL_PATH = Path(os.getenv("MODEL_PATH", ROOT / "models" / "xgboost_final_model.joblib"))
-HISTORY_FILE = Path(os.getenv("HISTORY_FILE", ROOT / "data" / "serving" / "history.csv"))
+LOCAL_MODEL_PATH = Path(os.getenv("MODEL_PATH", ROOT / "models" / "xgboost_final_model.joblib"))
+LOCAL_HISTORY_FILE = Path(os.getenv("HISTORY_FILE", ROOT / "data" / "serving" / "history.csv"))
 
 FEATURES = [
     "year", "month", "day", "day_of_week", "day_of_year",
@@ -15,6 +16,29 @@ FEATURES = [
     "lag_7", "lag_14", "lag_28", "lag_365",
     "rolling_mean_7", "rolling_mean_14", "rolling_mean_30",
 ]
+
+
+def resolve_artifacts():
+    """Return (model_path, history_path). Downloads from S3 when S3_BUCKET is set."""
+    bucket = os.getenv("S3_BUCKET")
+    if not bucket:
+        return LOCAL_MODEL_PATH, LOCAL_HISTORY_FILE
+
+    import boto3  # imported lazily so local runs and tests don't need AWS
+
+    region = os.getenv("AWS_REGION", "ap-southeast-2")
+    model_key = os.getenv("MODEL_KEY", "models/xgboost_final_model.joblib")
+    history_key = os.getenv("HISTORY_KEY", "serving/history.csv")
+
+    cache = Path(tempfile.gettempdir()) / "smartdemand"
+    cache.mkdir(parents=True, exist_ok=True)
+    model_path = cache / "model.joblib"
+    history_path = cache / "history.csv"
+
+    s3 = boto3.client("s3", region_name=region)
+    s3.download_file(bucket, model_key, str(model_path))
+    s3.download_file(bucket, history_key, str(history_path))
+    return model_path, history_path
 
 
 def create_features(current_date, history):
@@ -37,7 +61,10 @@ def create_features(current_date, history):
 
 
 class DemandForecaster:
-    def __init__(self, model_path=MODEL_PATH, history_file=HISTORY_FILE):
+    def __init__(self, model_path=None, history_file=None):
+        if model_path is None or history_file is None:
+            model_path, history_file = resolve_artifacts()
+
         self.model = joblib.load(model_path)
         df = pd.read_csv(history_file, parse_dates=["date"])
         df = df.sort_values(["store", "item", "date"])
@@ -52,7 +79,7 @@ class DemandForecaster:
         if key not in self.history:
             raise KeyError(f"Unknown store/item: {key}")
 
-        history = list(self.history[key])
+        history = list(self.history[key])  # copy, never mutate stored history
         results = []
 
         for day in range(1, horizon_days + 1):

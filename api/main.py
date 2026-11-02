@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from src.inference.predict import DemandForecaster
+from src.inference.predict import DemandForecaster  # pyright: ignore[reportAttributeAccessIssue]
 
 state = {}
 
