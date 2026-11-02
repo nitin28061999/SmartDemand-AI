@@ -1,0 +1,17 @@
+.venv*/
+.git/
+data/*
+!data/serving/
+data/serving/*
+!data/serving/history.csv
+models/*
+!models/xgboost_final_model.joblib
+mlruns/
+mlflow.db
+notebooks/
+reports/
+logs/
+nb/
+sub_data/
+tests/
+__pycache__/
