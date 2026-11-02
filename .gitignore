@@ -1,4 +1,5 @@
 .venv/
+.venv*/
 __pycache__/
 data/raw/
 data/processed/
@@ -9,14 +10,6 @@ mlruns/
 *.joblib
 .aws/
 reports/
-
-.venv*/
-mlflow.db
-logs/
-sub_data/submission.csv
-.vscode/
-
-.venv*/
 mlflow.db
 logs/
 sub_data/submission.csv
