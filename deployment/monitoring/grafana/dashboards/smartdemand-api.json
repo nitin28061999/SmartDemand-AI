@@ -1,0 +1,158 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (path, status) (rate(smartdemand_http_requests_total[5m]))",
+          "legendFormat": "{{path}} · {{status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP request rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le, path) (rate(smartdemand_http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{path}} p95",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP request latency (p95)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(smartdemand_http_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(smartdemand_http_requests_total[5m])), 0.001)",
+          "legendFormat": "5xx request ratio",
+          "refId": "A"
+        }
+      ],
+      "title": "Server error ratio",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "options": { "0": { "text": "Not loaded" }, "1": { "text": "Loaded" } }, "type": "value" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "smartdemand_model_loaded",
+          "refId": "A"
+        }
+      ],
+      "title": "Model readiness",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "d" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(smartdemand_forecast_horizon_days_bucket[5m])))",
+          "legendFormat": "requested horizon p95",
+          "refId": "A"
+        }
+      ],
+      "title": "Forecast horizon (p95)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(smartdemand_predicted_sales_sum[5m])) / clamp_min(sum(rate(smartdemand_predicted_sales_count[5m])), 0.001)",
+          "legendFormat": "mean predicted sales",
+          "refId": "A"
+        }
+      ],
+      "title": "Mean predicted sales",
+      "type": "stat"
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 41,
+  "tags": ["smartdemand", "monitoring"],
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "SmartDemand API",
+  "uid": "smartdemand-api",
+  "version": 1
+}

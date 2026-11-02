@@ -1,0 +1,33 @@
+groups:
+  - name: smartdemand-api
+    rules:
+      - alert: SmartDemandApiUnreachable
+        expr: up{job="smartdemand-api"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartDemand API metrics endpoint is unreachable
+          description: Prometheus has failed to scrape the API for at least two minutes.
+
+      - alert: SmartDemandApiModelNotLoaded
+        expr: smartdemand_model_loaded{job="smartdemand-api"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartDemand forecasting model is not loaded
+          description: The API reports that its model or serving history is unavailable.
+
+      - alert: SmartDemandApiHighServerErrorRate
+        expr: >-
+          sum(rate(smartdemand_http_requests_total{job="smartdemand-api",status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(smartdemand_http_requests_total{job="smartdemand-api"}[5m])), 0.001)
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartDemand API server error rate is above 5%
+          description: More than 5% of API requests have returned a 5xx response for five minutes.

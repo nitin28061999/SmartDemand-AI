@@ -53,8 +53,37 @@ startup.
 `GET /metrics` exposes Prometheus metrics for request counts and latency, model
 readiness, requested forecast horizons, and predicted sales distributions. The
 HTTP metrics use the route template (rather than store or item IDs) to keep
-label cardinality bounded. Configure a Prometheus server to scrape
-`http://<service-host>:8000/metrics` for ongoing monitoring.
+label cardinality bounded.
+
+## Local monitoring stack
+
+Start the API in one terminal after configuring its local or S3 artifacts:
+
+```powershell
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+```
+
+In another PowerShell terminal, set a local Grafana admin password and start
+Prometheus and Grafana:
+
+```powershell
+$env:GRAFANA_ADMIN_PASSWORD = "choose-a-local-password"
+docker compose -f deployment/monitoring/compose.yaml up -d
+```
+
+Open Prometheus at `http://localhost:9090` to check the API target and alert
+states. Open Grafana at `http://localhost:3000` and sign in as `admin` with the
+password set above; the SmartDemand API dashboard and Prometheus data source
+are provisioned automatically. The local Prometheus instance keeps seven days
+of metrics. Its alert rules cover scrape failures, model readiness, and
+elevated 5xx rates; notifications require a separately configured Alertmanager
+receiver.
+
+Stop the local monitoring containers with:
+
+```powershell
+docker compose -f deployment/monitoring/compose.yaml down
+```
 
 `POST /forecast` accepts a store, item, and forecast horizon:
 
@@ -97,5 +126,5 @@ and `latest`; it does not roll out a running service.
 - `src/inference/` — feature creation and recursive forecasting
 - `src/data/` — data preparation, including serving-history generation
 - `src/models/` — model training and validation scripts
-- `deployment/` — API container image definition
+- `deployment/` — API container image and local Prometheus/Grafana monitoring stack
 - `.github/workflows/ci.yml` — tests, image build, and ECR publishing
