@@ -1,0 +1,27 @@
+from fastapi.testclient import TestClient
+
+from api.main import app
+
+
+def test_health():
+    with TestClient(app) as client:
+        response = client.get("/health")
+        assert response.status_code == 200
+        assert response.json()["model_loaded"] is True
+
+
+def test_forecast_returns_requested_horizon():
+    with TestClient(app) as client:
+        response = client.post(
+            "/forecast", json={"store": 1, "item": 1, "horizon_days": 7}
+        )
+        assert response.status_code == 200
+        predictions = response.json()["predictions"]
+        assert len(predictions) == 7
+        assert all(p["predicted_sales"] >= 0 for p in predictions)
+
+
+def test_invalid_store_rejected():
+    with TestClient(app) as client:
+        response = client.post("/forecast", json={"store": 99, "item": 1})
+        assert response.status_code == 422
