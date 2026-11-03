@@ -25,3 +25,7 @@ def test_invalid_store_rejected():
     with TestClient(app) as client:
         response = client.post("/forecast", json={"store": 99, "item": 1})
         assert response.status_code == 422
+def test_response_has_request_id_header():
+    with TestClient(app) as client:
+        response = client.get("/health")
+        assert "x-request-id" in response.headers

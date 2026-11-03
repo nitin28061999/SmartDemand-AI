@@ -1,80 +1,52 @@
+import json
+import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
-from time import perf_counter
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
-from prometheus_client import (
-    CONTENT_TYPE_LATEST,
-    Counter,
-    Gauge,
-    Histogram,
-    generate_latest,
-)
-from starlette.middleware.base import RequestResponseEndpoint
-from starlette.responses import Response
-from starlette.requests import Request
 
-from src.inference.predict import DemandForecaster  # pyright: ignore[reportAttributeAccessIssue]
+from src.inference.predict import DemandForecaster
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger("smartdemand")
 
 state = {}
 
-HTTP_REQUESTS = Counter(
-    "smartdemand_http_requests_total",
-    "HTTP requests handled by the API.",
-    ("method", "path", "status"),
-)
-HTTP_REQUEST_DURATION = Histogram(
-    "smartdemand_http_request_duration_seconds",
-    "HTTP request duration in seconds.",
-    ("method", "path"),
-)
-MODEL_LOADED = Gauge(
-    "smartdemand_model_loaded",
-    "Whether the forecasting model and serving history are loaded.",
-)
-MODEL_LOADED.set(0)
-FORECAST_HORIZON = Histogram(
-    "smartdemand_forecast_horizon_days",
-    "Requested forecast horizon in days.",
-    buckets=(1, 7, 14, 30, 60, 90),
-)
-PREDICTED_SALES = Histogram(
-    "smartdemand_predicted_sales",
-    "Predicted sales values returned by the API.",
-    buckets=(0, 5, 10, 20, 40, 60, 100, 150, 250),
-)
+
+def log_event(event: str, **fields):
+    logger.info(json.dumps({"event": event, **fields}))
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    start = time.perf_counter()
     state["forecaster"] = DemandForecaster()
-    MODEL_LOADED.set(1)
+    log_event("model_loaded", seconds=round(time.perf_counter() - start, 2))
     yield
-    MODEL_LOADED.set(0)
     state.clear()
 
 
-app = FastAPI(title="SmartDemand AI", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="SmartDemand AI", version="0.2.0", lifespan=lifespan)
 
 
 @app.middleware("http")
-async def collect_http_metrics(
-    request: Request, call_next: RequestResponseEndpoint
-) -> Response:
-    start = perf_counter()
-    status_code = 500
-
-    try:
-        response = await call_next(request)
-        status_code = response.status_code
-        return response
-    finally:
-        route = request.scope.get("route")
-        path = route.path if route else "unmatched"
-        HTTP_REQUESTS.labels(request.method, path, str(status_code)).inc()
-        HTTP_REQUEST_DURATION.labels(request.method, path).observe(
-            perf_counter() - start
-        )
+async def log_requests(request: Request, call_next):
+    request_id = str(uuid.uuid4())
+    start = time.perf_counter()
+    response = await call_next(request)
+    latency_ms = round((time.perf_counter() - start) * 1000, 1)
+    response.headers["X-Request-ID"] = request_id
+    log_event(
+        "request",
+        request_id=request_id,
+        method=request.method,
+        path=request.url.path,
+        status=response.status_code,
+        latency_ms=latency_ms,
+    )
+    return response
 
 
 class ForecastRequest(BaseModel):
@@ -88,11 +60,6 @@ def health():
     return {"status": "ok", "model_loaded": "forecaster" in state}
 
 
-@app.get("/metrics", include_in_schema=False)
-def metrics():
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
-
-
 @app.post("/forecast")
 def forecast(request: ForecastRequest):
     try:
@@ -100,11 +67,19 @@ def forecast(request: ForecastRequest):
             request.store, request.item, request.horizon_days
         )
     except KeyError as error:
+        log_event("forecast_rejected", store=request.store, item=request.item)
         raise HTTPException(status_code=404, detail=str(error))
 
-    FORECAST_HORIZON.observe(request.horizon_days)
-    for prediction in predictions:
-        PREDICTED_SALES.observe(prediction["predicted_sales"])
+    values = [p["predicted_sales"] for p in predictions]
+    log_event(
+        "forecast",
+        store=request.store,
+        item=request.item,
+        horizon_days=request.horizon_days,
+        pred_mean=round(sum(values) / len(values), 2),
+        pred_min=min(values),
+        pred_max=max(values),
+    )
 
     return {
         "store": request.store,
