@@ -16,3 +16,6 @@ ENV AWS_REGION=ap-southeast-2
 
 EXPOSE 8000
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+RUN useradd --create-home --uid 10001 appuser
+USER appuser

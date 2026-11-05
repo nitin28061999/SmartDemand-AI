@@ -29,3 +29,11 @@ def test_response_has_request_id_header():
     with TestClient(app) as client:
         response = client.get("/health")
         assert "x-request-id" in response.headers
+def test_forecast_requires_key_when_configured(monkeypatch):
+    monkeypatch.setenv("API_KEY", "test-key")
+    body = {"store": 1, "item": 1, "horizon_days": 3}
+    with TestClient(app) as client:
+        assert client.post("/forecast", json=body).status_code == 401
+        assert client.post("/forecast", json=body, headers={"X-API-Key": "wrong"}).status_code == 401
+        assert client.post("/forecast", json=body, headers={"X-API-Key": "test-key"}).status_code == 200
+        assert client.get("/health").status_code == 200
