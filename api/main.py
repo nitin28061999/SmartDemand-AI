@@ -7,6 +7,7 @@ import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Security
+from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
@@ -59,17 +60,45 @@ app = FastAPI(
 async def log_requests(request: Request, call_next):
     request_id = str(uuid.uuid4())
     start = time.perf_counter()
-    response = await call_next(request)
+    exception_occurred = False
+
+    try:
+        response = await call_next(request)
+
+    except Exception as error:  # noqa: BLE001
+        exception_occurred = True
+
+        latency_ms = round((time.perf_counter() - start) * 1000, 1)
+
+        log_event(
+            "request_failed",
+            request_id=request_id,
+            method=request.method,
+            path=request.url.path,
+            status=500,
+            latency_ms=latency_ms,
+            error_type=type(error).__name__,
+        )
+
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"},
+        )
+
     latency_ms = round((time.perf_counter() - start) * 1000, 1)
+
     response.headers["X-Request-ID"] = request_id
-    log_event(
-        "request",
-        request_id=request_id,
-        method=request.method,
-        path=request.url.path,
-        status=response.status_code,
-        latency_ms=latency_ms,
-    )
+
+    if not exception_occurred:
+        log_event(
+            "request",
+            request_id=request_id,
+            method=request.method,
+            path=request.url.path,
+            status=response.status_code,
+            latency_ms=latency_ms,
+        )
+
     return response
 
 
@@ -91,8 +120,27 @@ def forecast(request: ForecastRequest):
             request.store, request.item, request.horizon_days
         )
     except KeyError as error:
-        log_event("forecast_rejected", store=request.store, item=request.item)
-        raise HTTPException(status_code=404, detail=str(error)) from error
+        log_event(
+            "forecast_rejected",
+            store=request.store,
+            item=request.item,
+        )
+        raise HTTPException(
+            status_code=404,
+            detail=str(error),
+        ) from error
+
+    except Exception as error:
+        log_event(
+            "forecast_failed",
+            store=request.store,
+            item=request.item,
+            error_type=type(error).__name__,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Forecast generation failed. Please try again later.",
+        ) from error
 
     values = [p["predicted_sales"] for p in predictions]
     log_event(
