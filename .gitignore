@@ -16,3 +16,7 @@ sub_data/submission.csv
 .aws/
 reports/
 .pytest_cache/
+
+# Monitoring secrets
+deployment/monitoring/secrets/
+deployment/monitoring/monitoring.env

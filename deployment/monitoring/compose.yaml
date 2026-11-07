@@ -1,3 +1,4 @@
+
 services:
   prometheus:
     image: prom/prometheus:v3.15.1
@@ -10,6 +11,7 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - ./secrets:/etc/prometheus/secrets:ro
       - prometheus-data:/prometheus
     extra_hosts:
       - "host.docker.internal:host-gateway"
