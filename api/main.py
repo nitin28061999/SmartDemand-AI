@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Security
 from fastapi.responses import JSONResponse, Response
-from fastapi.security import APIKeyHeader
+from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     Counter,
@@ -28,7 +28,30 @@ logger = logging.getLogger("smartdemand")
 state = {}
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+metrics_bearer = HTTPBearer(auto_error=False)
+metrics_credentials = Security(metrics_bearer)
 
+
+def require_metrics_api_key(
+    credentials: HTTPAuthorizationCredentials | None = metrics_credentials,
+):
+    expected = os.getenv("METRICS_API_KEY")
+
+    if not expected:
+        raise HTTPException(
+            status_code=503,
+            detail="Metrics authentication is not configured",
+        )
+
+    if (
+        not credentials
+        or credentials.scheme.lower() != "bearer"
+        or not hmac.compare_digest(credentials.credentials, expected)
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or missing metrics API key",
+        )
 # Prometheus application metrics
 HTTP_REQUESTS = Counter(
     "smartdemand_http_requests_total",
@@ -185,7 +208,7 @@ def health():
     }
 
 
-@app.get("/metrics")
+@app.get("/metrics", dependencies=[Depends(require_metrics_api_key)])
 def metrics():
     return Response(
         content=generate_latest(),

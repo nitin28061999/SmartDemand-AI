@@ -121,3 +121,38 @@ def test_middleware_handles_unexpected_exception():
     }
     assert "x-request-id" in response.headers
     assert "Internal test exception" not in response.text
+def test_metrics_returns_503_when_key_not_configured(monkeypatch):
+    monkeypatch.delenv("METRICS_API_KEY", raising=False)
+
+    with TestClient(app) as client:
+        response = client.get("/metrics")
+
+    assert response.status_code == 503
+
+
+def test_metrics_rejects_missing_or_invalid_bearer_token(monkeypatch):
+    monkeypatch.setenv("METRICS_API_KEY", "metrics-test-key")
+
+    with TestClient(app) as client:
+        missing = client.get("/metrics")
+        invalid = client.get(
+            "/metrics",
+            headers={"Authorization": "Bearer wrong-key"},
+        )
+
+    assert missing.status_code == 401
+    assert invalid.status_code == 401
+
+
+def test_metrics_accepts_valid_bearer_token(monkeypatch):
+    monkeypatch.setenv("METRICS_API_KEY", "metrics-test-key")
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/metrics",
+            headers={"Authorization": "Bearer metrics-test-key"},
+        )
+
+    assert response.status_code == 200
+    assert "text/plain" in response.headers["content-type"]
+    assert b"smartdemand_model_loaded" in response.content
