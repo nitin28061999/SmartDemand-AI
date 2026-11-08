@@ -20,3 +20,6 @@ reports/
 # Monitoring secrets
 deployment/monitoring/secrets/
 deployment/monitoring/monitoring.env
+
+# Alertmanager SMTP credentials
+deployment/monitoring/alertmanager.env

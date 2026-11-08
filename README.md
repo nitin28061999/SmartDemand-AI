@@ -4,6 +4,10 @@ SmartDemand AI forecasts daily item sales for a store. The FastAPI service uses
 the trained XGBoost model and recent sales history to produce recursive
 forecasts.
 
+## Documentation
+
+- [System architecture](docs/architecture.md)
+
 ## Kaggle result
 
 The recursive XGBoost submission for the Store Item Demand Forecasting

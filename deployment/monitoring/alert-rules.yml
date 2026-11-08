@@ -31,3 +31,21 @@ groups:
         annotations:
           summary: SmartDemand API server error rate is above 5%
           description: More than 5% of API requests have returned a 5xx response for five minutes.
+
+      - alert: SmartDemandApiHighForecastLatency
+        expr: >-
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(smartdemand_http_request_duration_seconds_bucket{
+                job="smartdemand-api",
+                path="/forecast"
+              }[5m])
+            )
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: SmartDemand forecast API latency is high
+          description: The p95 latency of forecast requests has exceeded 2 seconds for five minutes.
