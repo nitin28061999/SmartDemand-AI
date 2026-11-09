@@ -25,18 +25,33 @@ def test_invalid_store_rejected():
     with TestClient(app) as client:
         response = client.post("/forecast", json={"store": 99, "item": 1})
         assert response.status_code == 422
+
+
 def test_response_has_request_id_header():
     with TestClient(app) as client:
         response = client.get("/health")
         assert "x-request-id" in response.headers
+
+
 def test_forecast_requires_key_when_configured(monkeypatch):
     monkeypatch.setenv("API_KEY", "test-key")
     body = {"store": 1, "item": 1, "horizon_days": 3}
     with TestClient(app) as client:
         assert client.post("/forecast", json=body).status_code == 401
-        assert client.post("/forecast", json=body, headers={"X-API-Key": "wrong"}).status_code == 401
-        assert client.post("/forecast", json=body, headers={"X-API-Key": "test-key"}).status_code == 200
+        assert (
+            client.post(
+                "/forecast", json=body, headers={"X-API-Key": "wrong"}
+            ).status_code
+            == 401
+        )
+        assert (
+            client.post(
+                "/forecast", json=body, headers={"X-API-Key": "test-key"}
+            ).status_code
+            == 200
+        )
         assert client.get("/health").status_code == 200
+
 
 def test_unknown_store_item_returns_404():
     with TestClient(app) as client:
@@ -80,11 +95,13 @@ def test_forecast_response_structure():
         assert data["horizon_days"] == 3
         assert len(data["predictions"]) == 3
 
-# sourcery skip: no-loop-in-tests
-# sourcery skip: no-loop-in-tests
+        # sourcery skip: no-loop-in-tests
+        # sourcery skip: no-loop-in-tests
         for prediction in data["predictions"]:
             assert "date" in prediction
             assert "predicted_sales" in prediction
+
+
 def test_forecast_unexpected_error_returns_safe_500(monkeypatch):
     def failing_forecast(store, item, horizon_days):
         raise RuntimeError("Sensitive internal error")
@@ -107,6 +124,7 @@ def test_forecast_unexpected_error_returns_safe_500(monkeypatch):
         }
         assert "Sensitive internal error" not in response.text
 
+
 def test_middleware_handles_unexpected_exception():
     @app.get("/test-middleware-error")
     def raise_unexpected_error():
@@ -116,11 +134,11 @@ def test_middleware_handles_unexpected_exception():
         response = client.get("/test-middleware-error")
 
     assert response.status_code == 500
-    assert response.json() == {
-        "detail": "Internal server error"
-    }
+    assert response.json() == {"detail": "Internal server error"}
     assert "x-request-id" in response.headers
     assert "Internal test exception" not in response.text
+
+
 def test_metrics_returns_503_when_key_not_configured(monkeypatch):
     monkeypatch.delenv("METRICS_API_KEY", raising=False)
 

@@ -1,4 +1,3 @@
-
 import hmac
 import json
 import logging
@@ -52,6 +51,8 @@ def require_metrics_api_key(
             status_code=401,
             detail="Invalid or missing metrics API key",
         )
+
+
 # Prometheus application metrics
 HTTP_REQUESTS = Counter(
     "smartdemand_http_requests_total",
@@ -175,9 +176,7 @@ async def log_requests(request: Request, call_next):
             path=metric_path,
             status=str(status_code),
         ).inc()
-        HTTP_REQUEST_DURATION.labels(path=metric_path).observe(
-            latency_seconds
-        )
+        HTTP_REQUEST_DURATION.labels(path=metric_path).observe(latency_seconds)
 
     response.headers["X-Request-ID"] = request_id
 

@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 import pandas as pd
@@ -11,8 +10,10 @@ df = pd.read_csv(DATA_PATH, parse_dates=["date"])
 
 lines = []
 
+
 def add(text=""):
     lines.append(str(text))
+
 
 add("SMARTDEMAND AI - BUSINESS INSIGHTS REPORT")
 add("=" * 55)
@@ -33,19 +34,11 @@ store_sales = (
 add("\n2. STORE PERFORMANCE")
 add(store_sales.to_string())
 
-add(
-    f"\nHighest-selling store: Store {store_sales['sum'].idxmax()}"
-)
-add(
-    f"Lowest-selling store: Store {store_sales['sum'].idxmin()}"
-)
+add(f"\nHighest-selling store: Store {store_sales['sum'].idxmax()}")
+add(f"Lowest-selling store: Store {store_sales['sum'].idxmin()}")
 
 # Item performance
-item_sales = (
-    df.groupby("item")["sales"]
-    .sum()
-    .sort_values(ascending=False)
-)
+item_sales = df.groupby("item")["sales"].sum().sort_values(ascending=False)
 
 add("\n3. PRODUCT PERFORMANCE")
 add(f"Top-selling item: Item {item_sales.idxmax()}")
@@ -66,13 +59,18 @@ df["weekday"] = df["date"].dt.day_of_week
 weekday = df.groupby("weekday")["sales"].mean()
 
 weekday_names = [
-    "Monday", "Tuesday", "Wednesday",
-    "Thursday", "Friday", "Saturday", "Sunday"
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
 ]
 
 add("\n5. WEEKDAY PERFORMANCE")
 for day, value in weekday.items():
-    add(f"{weekday_names[day]}: {value:.2f}") # pyright: ignore[reportCallIssue, reportArgumentType]
+    add(f"{weekday_names[day]}: {value:.2f}")  # pyright: ignore[reportCallIssue, reportArgumentType]
 
 OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 OUTPUT_PATH.write_text("\n".join(lines), encoding="utf-8")

@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -22,9 +21,7 @@ train["day_of_week"] = train["date"].dt.day_of_week
 
 # 1. Monthly sales trend
 monthly_sales = (
-    train.groupby(pd.Grouper(key="date", freq="MS"))["sales"]
-    .sum()
-    .reset_index()
+    train.groupby(pd.Grouper(key="date", freq="MS"))["sales"].sum().reset_index()
 )
 
 plt.figure(figsize=(14, 5))
@@ -37,14 +34,17 @@ plt.savefig(OUTPUT_DIR / "monthly_sales_trend.png", dpi=150)
 plt.show()
 
 # 2. Average sales by weekday
-weekday_sales = (
-    train.groupby("day_of_week")["sales"]
-    .mean()
-    .reset_index()
-)
+weekday_sales = train.groupby("day_of_week")["sales"].mean().reset_index()
 
-weekday_names = ["Monday", "Tuesday", "Wednesday", "Thursday",
-                 "Friday", "Saturday", "Sunday"]
+weekday_names = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
 
 weekday_sales["weekday"] = weekday_sales["day_of_week"].map(
     dict(enumerate(weekday_names))
@@ -78,12 +78,7 @@ plt.savefig(OUTPUT_DIR / "store_sales.png", dpi=150)
 plt.show()
 
 # 4. Top 10 products by total sales
-item_sales = (
-    train.groupby("item")["sales"]
-    .sum()
-    .nlargest(10)
-    .reset_index()
-)
+item_sales = train.groupby("item")["sales"].sum().nlargest(10).reset_index()
 
 plt.figure(figsize=(10, 5))
 sns.barplot(data=item_sales, x="item", y="sales")
@@ -105,11 +100,7 @@ plt.savefig(OUTPUT_DIR / "sales_distribution.png", dpi=150)
 plt.show()
 
 # 6. Monthly seasonality across years
-monthly_year_sales = (
-    train.groupby(["year", "month"])["sales"]
-    .mean()
-    .unstack()
-)
+monthly_year_sales = train.groupby(["year", "month"])["sales"].mean().unstack()
 
 plt.figure(figsize=(12, 5))
 sns.heatmap(monthly_year_sales, annot=True, fmt=".1f", cmap="YlGnBu")
@@ -122,8 +113,11 @@ plt.show()
 
 # Additional checks
 print("\n========== ADDITIONAL EDA ==========")
-print("Percentage of zero-sales records:",
-      round((train["sales"].eq(0).mean()) * 100, 2), "%")
+print(
+    "Percentage of zero-sales records:",
+    round((train["sales"].eq(0).mean()) * 100, 2),
+    "%",
+)
 
 print("\nTest date range:")
 test = pd.read_csv(DATA_DIR / "test.csv", parse_dates=["date"])

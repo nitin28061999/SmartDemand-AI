@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 import pandas as pd
@@ -51,12 +50,7 @@ print("\nSales by store:")
 print(train.groupby("store")["sales"].agg(["count", "mean", "sum"]))
 
 print("\nTop 10 items by total sales:")
-print(
-    train.groupby("item")["sales"]
-    .sum()
-    .sort_values(ascending=False)
-    .head(10)
-)
+print(train.groupby("item")["sales"].sum().sort_values(ascending=False).head(10))
 
 # Sales statistics
 print("\n========== SALES DISTRIBUTION ==========")
@@ -67,17 +61,9 @@ train["year"] = train["date"].dt.year
 train["month"] = train["date"].dt.month
 train["day_of_week"] = train["date"].dt.day_of_week
 
-monthly_sales = (
-    train.groupby(["year", "month"])["sales"]
-    .sum()
-    .reset_index()
-)
+monthly_sales = train.groupby(["year", "month"])["sales"].sum().reset_index()
 
-weekly_sales = (
-    train.groupby("day_of_week")["sales"]
-    .mean()
-    .reset_index()
-)
+weekly_sales = train.groupby("day_of_week")["sales"].mean().reset_index()
 
 # Save initial analysis outputs
 monthly_sales.to_csv(OUTPUT_DIR / "monthly_sales.csv", index=False)
