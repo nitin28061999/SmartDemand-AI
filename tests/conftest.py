@@ -1,4 +1,3 @@
-
 import os
 import tempfile
 from pathlib import Path
@@ -19,15 +18,15 @@ def _build_synthetic_artifacts(model_path: Path, history_path: Path):
 
     sales = np.clip(
         20
-        + 5 * np.sin(np.arange(n_days) * 2 * np.pi / 7) # pyright: ignore[reportOperatorIssue]
+        + 5 * np.sin(np.arange(n_days) * 2 * np.pi / 7)  # pyright: ignore[reportOperatorIssue]
         + rng.normal(0, 1, n_days),
         0,
         None,
     )
 
-    pd.DataFrame(
-        {"date": dates, "store": 1, "item": 1, "sales": sales}
-    ).to_csv(history_path, index=False)
+    pd.DataFrame({"date": dates, "store": 1, "item": 1, "sales": sales}).to_csv(
+        history_path, index=False
+    )
 
     rows, targets = [], []
 

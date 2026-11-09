@@ -1,4 +1,3 @@
-
 import os
 import tempfile
 from pathlib import Path
@@ -63,8 +62,7 @@ def resolve_artifacts():
         s3.download_file(bucket, history_key, str(history_path))
     except Exception as error:
         raise RuntimeError(
-            "Unable to download model or history artifacts from S3. "
-            f"Bucket: {bucket}"
+            f"Unable to download model or history artifacts from S3. Bucket: {bucket}"
         ) from error
 
     return model_path, history_path
@@ -76,13 +74,16 @@ def validate_history(df: pd.DataFrame) -> pd.DataFrame:
 
     if missing_columns:
         raise ValueError(
-            f"History file is missing required columns: "
-            f"{sorted(missing_columns)}"
+            f"History file is missing required columns: {sorted(missing_columns)}"
         )
 
     df = df.copy()
 
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["date"] = pd.to_datetime(
+        df["date"],
+        format="%Y-%m-%d",
+        errors="coerce",
+    )
 
     if df["date"].isna().any():
         raise ValueError("History contains invalid or missing dates.")
@@ -130,9 +131,7 @@ def validate_history(df: pd.DataFrame) -> pd.DataFrame:
         )
 
         if len(expected_dates) != len(group):
-            raise ValueError(
-                f"Missing daily observations for store/item {key}."
-            )
+            raise ValueError(f"Missing daily observations for store/item {key}.")
 
     return df
 
@@ -140,9 +139,7 @@ def validate_history(df: pd.DataFrame) -> pd.DataFrame:
 def create_features(current_date, history):
     """Create time and lag features for a single forecast date."""
     if len(history) < MIN_HISTORY_LENGTH:
-        raise ValueError(
-            f"At least {MIN_HISTORY_LENGTH} observations are required."
-        )
+        raise ValueError(f"At least {MIN_HISTORY_LENGTH} observations are required.")
 
     return {
         "year": current_date.year,
@@ -167,9 +164,7 @@ class DemandForecaster:
         if model_path is None and history_file is None:
             model_path, history_file = resolve_artifacts()
         elif model_path is None or history_file is None:
-            raise ValueError(
-                "Provide both model_path and history_file, or neither."
-            )
+            raise ValueError("Provide both model_path and history_file, or neither.")
 
         model_path = Path(model_path)
         history_file = Path(history_file)
@@ -178,9 +173,7 @@ class DemandForecaster:
             raise FileNotFoundError(f"Model file not found: {model_path}")
 
         if not history_file.is_file():
-            raise FileNotFoundError(
-                f"History file not found: {history_file}"
-            )
+            raise FileNotFoundError(f"History file not found: {history_file}")
 
         try:
             self.model = joblib.load(model_path)
@@ -197,7 +190,7 @@ class DemandForecaster:
         self.last_date = df["date"].max()
 
         self.history = {
-            (int(store), int(item)): group["sales"].astype(float).tolist() # pyright: ignore[reportArgumentType]
+            (int(store), int(item)): group["sales"].astype(float).tolist()  # pyright: ignore[reportArgumentType]
             for (store, item), group in df.groupby(["store", "item"])
         }
 

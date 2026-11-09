@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 import pandas as pd
@@ -17,9 +16,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["date"] = pd.to_datetime(df["date"])
 
-    df = df.sort_values(
-        ["store", "item", "date"]
-    ).reset_index(drop=True)
+    df = df.sort_values(["store", "item", "date"]).reset_index(drop=True)
 
     # Calendar features
     df["year"] = df["date"].dt.year
@@ -37,15 +34,11 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         df[f"lag_{lag}"] = group.shift(lag)
 
     # Shift before rolling to prevent current-day target leakage
-    shifted_sales = (
-        df.groupby(["store", "item"])["sales"]
-        .shift(1)
-    )
+    shifted_sales = df.groupby(["store", "item"])["sales"].shift(1)
 
     for window in [7, 14, 30]:
         df[f"rolling_mean_{window}"] = (
-            shifted_sales
-            .groupby([df["store"], df["item"]])
+            shifted_sales.groupby([df["store"], df["item"]])
             .rolling(window)
             .mean()
             .reset_index(level=[0, 1], drop=True)
@@ -55,7 +48,6 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-
     print("Loading training data...")
 
     train = pd.read_csv(RAW_DIR / "train.csv")

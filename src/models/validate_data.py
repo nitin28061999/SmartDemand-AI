@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 import pandas as pd
@@ -17,9 +16,7 @@ def main():
     print("Dataset shape:", df.shape)
 
     # Identify the final 90 calendar days
-    validation_start = (
-        df["date"].max() - pd.Timedelta(days=VALIDATION_DAYS - 1)
-    )
+    validation_start = df["date"].max() - pd.Timedelta(days=VALIDATION_DAYS - 1)
 
     training = df[df["date"] < validation_start].copy()
     validation = df[df["date"] >= validation_start].copy()
@@ -43,13 +40,10 @@ def main():
 
     print("\nSTORE-ITEM VALIDATION CHECK")
 
-    expected_combinations = (
-        df[["store", "item"]].drop_duplicates().shape[0]
-    )
+    expected_combinations = df[["store", "item"]].drop_duplicates().shape[0]
 
-    combinations_per_day = (
-        validation.groupby("date")[["store", "item"]]
-        .apply(lambda x: len(x.drop_duplicates()))
+    combinations_per_day = validation.groupby("date")[["store", "item"]].apply(
+        lambda x: len(x.drop_duplicates())
     )
 
     print("Expected store-item combinations:", expected_combinations)

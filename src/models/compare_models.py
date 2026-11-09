@@ -1,4 +1,3 @@
-
 from pathlib import Path  # noqa: I001
 
 import pandas as pd
@@ -21,10 +20,7 @@ def main():
     xgboost["Model"] = "XGBoost"
 
     # Combine results
-    comparison = pd.concat(
-        [baseline, xgboost],
-        ignore_index=True
-    )
+    comparison = pd.concat([baseline, xgboost], ignore_index=True)
 
     # Standardize column order
     comparison = comparison[["Model", "MAE", "RMSE", "RMSLE"]]
@@ -47,10 +43,7 @@ def main():
     for metric in metrics:
         plt.figure(figsize=(10, 6))
 
-        plt.bar(
-            comparison["Model"],
-            comparison[metric]
-        )
+        plt.bar(comparison["Model"], comparison[metric])
 
         plt.title(f"Model Comparison - {metric}")
         plt.xlabel("Model")

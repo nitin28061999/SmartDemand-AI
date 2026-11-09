@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 import joblib
@@ -50,7 +49,6 @@ def create_features(current_date, history):
         "day_of_year": current_date.day_of_year,
         "is_weekend": int(current_date.day_of_week >= 5),
         "week_of_year": int(current_date.isocalendar().week),
-        
         "lag_7": history[-7],
         "lag_14": history[-14],
         "lag_28": history[-28],
@@ -67,9 +65,7 @@ def calculate_metrics(actual, predicted):
     return {
         "MAE": mean_absolute_error(actual, predicted),
         "RMSE": np.sqrt(mean_squared_error(actual, predicted)),
-        "RMSLE": np.sqrt(
-            mean_squared_log_error(actual, predicted)
-        ),
+        "RMSLE": np.sqrt(mean_squared_log_error(actual, predicted)),
     }
 
 
@@ -85,15 +81,12 @@ def main():
         parse_dates=["date"],
     )
 
-    validation_start = (
-        features_df["date"].max()
-        - pd.Timedelta(days=VALIDATION_DAYS - 1)
+    validation_start = features_df["date"].max() - pd.Timedelta(
+        days=VALIDATION_DAYS - 1
     )
 
     # Only pre-validation rows are used for model fitting.
-    training = features_df[
-        features_df["date"] < validation_start
-    ].copy()
+    training = features_df[features_df["date"] < validation_start].copy()
 
     print("Training rows:", len(training))
     print("Training end:", training["date"].max().date())
@@ -123,29 +116,16 @@ def main():
     # Load original observations to initialize recursive history.
     raw_df = pd.read_csv(RAW_FILE, parse_dates=["date"])
 
-    history_data = raw_df[
-        raw_df["date"] < validation_start
-    ].copy()
+    history_data = raw_df[raw_df["date"] < validation_start].copy()
 
-    validation = raw_df[
-        raw_df["date"] >= validation_start
-    ].copy()
+    validation = raw_df[raw_df["date"] >= validation_start].copy()
 
-    history = {}
-
-    for (store, item), group in history_data.groupby(
-        ["store", "item"]
-    ):
-        history[(store, item)] = (
-            group.sort_values("date")["sales"]
-            .astype(float)
-            .tolist()
+    history = {
+        (store, item): (
+            group.sort_values("date")["sales"].astype(float).tolist()
         )
-
-    validation.set_index(
-        ["date", "store", "item"]
-    )["sales"].to_dict()
-
+        for (store, item), group in history_data.groupby(["store", "item"])
+    }
     predictions = []
 
     validation_dates = sorted(validation["date"].unique())
@@ -153,14 +133,12 @@ def main():
     print("\nStarting recursive 90-day forecasting...")
 
     for day_number, current_date in enumerate(validation_dates, 1):
-
         daily_rows = []
         daily_keys = []
 
         current_date = pd.Timestamp(current_date)
 
         for store, item in sorted(history.keys()):
-
             key = (store, item)
 
             row = create_features(
@@ -187,26 +165,25 @@ def main():
             daily_keys,
             daily_predictions,
         ):
-
             history[key].append(float(prediction))
 
-            predictions.append({
-                "date": current_date,
-                "store": key[0],
-                "item": key[1],
-                "prediction": float(prediction),
-            })
+            predictions.append(
+                {
+                    "date": current_date,
+                    "store": key[0],
+                    "item": key[1],
+                    "prediction": float(prediction),
+                }
+            )
 
         if day_number % 15 == 0:
-            print(
-                f"Completed {day_number}/{VALIDATION_DAYS} days"
-            )
+            print(f"Completed {day_number}/{VALIDATION_DAYS} days")
 
     prediction_df = pd.DataFrame(predictions)
 
-    results = validation[
-        ["date", "store", "item", "sales"]
-    ].rename(columns={"sales": "actual"})
+    results = validation[["date", "store", "item", "sales"]].rename(
+        columns={"sales": "actual"}
+    )
 
     results = results.merge(
         prediction_df,
@@ -215,8 +192,16 @@ def main():
         validate="one_to_one",
     )
 
-    assert results["prediction"].notna().all()
-    assert len(results) == VALIDATION_DAYS * 500
+    if results["prediction"].isna().any():
+        raise ValueError("Missing predictions found in validation results.")
+
+    expected_rows = len(validation_dates) * len(history)
+
+    if len(results) != expected_rows:
+        raise ValueError(
+            f"Expected {expected_rows} validation rows, "
+            f"but got {len(results)}."
+        )
 
     metrics = calculate_metrics(
         results["actual"],
@@ -243,10 +228,12 @@ def main():
     )
 
     # Save feature importance.
-    importance = pd.DataFrame({
-        "feature": FEATURES,
-        "importance": model.feature_importances_, # pyright: ignore[reportAttributeAccessIssue]
-    }).sort_values("importance", ascending=False)
+    importance = pd.DataFrame(
+        {
+            "feature": FEATURES,
+            "importance": model.feature_importances_,  # pyright: ignore[reportAttributeAccessIssue]
+        }
+    ).sort_values("importance", ascending=False)
 
     importance.to_csv(
         REPORT_DIR / "feature_importance.csv",

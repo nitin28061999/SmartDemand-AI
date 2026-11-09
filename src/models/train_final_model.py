@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 import joblib
@@ -112,13 +111,9 @@ def main():
 
     history = {}
 
-    for (store, item), group in raw_df.groupby(
-        ["store", "item"]
-    ):
-        history[(int(store), int(item))] = ( # pyright: ignore[reportArgumentType]
-            group.sort_values("date")["sales"]
-            .astype(float)
-            .tolist()
+    for (store, item), group in raw_df.groupby(["store", "item"]):
+        history[(int(store), int(item))] = (  # pyright: ignore[reportArgumentType]
+            group.sort_values("date")["sales"].astype(float).tolist()
         )
 
     # Load Kaggle test data.
@@ -142,14 +137,12 @@ def main():
     print("\nStarting recursive test forecasting...")
 
     for day_number, current_date in enumerate(test_dates, 1):
-
         current_date = pd.Timestamp(current_date)
 
         daily_rows = []
         daily_keys = []
 
         for store, item in sorted(history.keys()):
-
             row = create_features(
                 current_date,
                 history[(store, item)],
@@ -178,23 +171,20 @@ def main():
         # Store predictions only for requested test combinations.
         test_day = test_df[test_df["date"] == current_date]
 
-        prediction_lookup = dict(
-            zip(daily_keys, daily_predictions)
-        )
+        prediction_lookup = dict(zip(daily_keys, daily_predictions))
 
         for row in test_day.itertuples(index=False):
+            key = (int(row.store), int(row.item))  # pyright: ignore[reportArgumentType]
 
-            key = (int(row.store), int(row.item)) # pyright: ignore[reportArgumentType]
-
-            predictions.append({
-                "id": int(row.id), # pyright: ignore[reportArgumentType]
-                "sales": float(prediction_lookup[key]),
-            })
+            predictions.append(
+                {
+                    "id": int(row.id),  # pyright: ignore[reportArgumentType]
+                    "sales": float(prediction_lookup[key]),
+                }
+            )
 
         if day_number % 15 == 0:
-            print(
-                f"Completed {day_number}/{len(test_dates)} days"
-            )
+            print(f"Completed {day_number}/{len(test_dates)} days")
 
     # Build final submission.
     prediction_df = pd.DataFrame(predictions)

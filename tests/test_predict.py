@@ -1,4 +1,3 @@
-
 import joblib  # noqa: F401
 import numpy as np
 import pandas as pd
@@ -39,7 +38,6 @@ def test_missing_columns_rejected(valid_history):
         validate_history(invalid_history)
 
 
-
 def test_invalid_dates_rejected(valid_history):
     invalid_history = valid_history.copy()
     invalid_history["date"] = invalid_history["date"].astype(object)
@@ -47,7 +45,6 @@ def test_invalid_dates_rejected(valid_history):
 
     with pytest.raises(ValueError, match="invalid or missing dates"):
         validate_history(invalid_history)
-
 
 
 def test_negative_sales_rejected(valid_history):
@@ -104,6 +101,8 @@ def test_non_finite_sales_rejected(valid_history):
 
     with pytest.raises(ValueError, match="non-finite"):
         validate_history(invalid_history)
+
+
 def test_missing_model_file_rejected(valid_history, tmp_path):
     history_path = tmp_path / "history.csv"
     valid_history.to_csv(history_path, index=False)
@@ -143,6 +142,8 @@ def test_corrupt_model_file_rejected(valid_history, tmp_path):
             model_path=model_path,
             history_file=history_path,
         )
+
+
 class FakeModel:
     def __init__(self, prediction):
         self.prediction = prediction

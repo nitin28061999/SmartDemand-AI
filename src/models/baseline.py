@@ -1,4 +1,3 @@
-
 from copy import deepcopy
 from pathlib import Path
 
@@ -27,9 +26,7 @@ def calculate_metrics(actual, predicted):
     return {
         "MAE": mean_absolute_error(actual, predicted),
         "RMSE": np.sqrt(mean_squared_error(actual, predicted)),
-        "RMSLE": np.sqrt(
-            mean_squared_log_error(actual, predicted)
-        ),
+        "RMSLE": np.sqrt(mean_squared_log_error(actual, predicted)),
     }
 
 
@@ -44,11 +41,9 @@ def run_recursive_baseline(history, validation, method):
     store_item_pairs = sorted(history.keys())
 
     for current_date in validation_dates:
-
         daily_predictions = []
 
         for store, item in store_item_pairs:
-
             key = (store, item)
             past_sales = history[key]
 
@@ -66,12 +61,14 @@ def run_recursive_baseline(history, validation, method):
 
             prediction = max(0, float(prediction))
 
-            daily_predictions.append({
-                "date": current_date,
-                "store": store,
-                "item": item,
-                "prediction": prediction,
-            })
+            daily_predictions.append(
+                {
+                    "date": current_date,
+                    "store": store,
+                    "item": item,
+                    "prediction": prediction,
+                }
+            )
 
             # Add the prediction, not actual sales, to future history.
             history[key].append(prediction)
@@ -92,10 +89,7 @@ def main():
     print("Original dataset shape:", df.shape)
 
     # Identify the final 90 days.
-    validation_start = (
-        df["date"].max()
-        - pd.Timedelta(days=VALIDATION_DAYS - 1)
-    )
+    validation_start = df["date"].max() - pd.Timedelta(days=VALIDATION_DAYS - 1)
 
     # Split actual historical data from validation data.
     training = df[df["date"] < validation_start].copy()
@@ -109,29 +103,26 @@ def main():
     print("Validation ends:", validation["date"].max().date())
     print("Validation rows:", len(validation))
 
-    # Build initial history using only data before validation.
-    history = {}
-
-    for (store, item), group in training.groupby(["store", "item"]):
-
-        history[(store, item)] = (
-            group.sort_values("date")["sales"]
-            .astype(float)
-            .tolist()
+    history = {
+        (store, item): (
+            group.sort_values("date")["sales"].astype(float).tolist()
         )
-
+        for (store, item), group in training.groupby(["store", "item"])
+    }
     print("\nStore-item combinations:", len(history))
 
     # Verify enough history exists for both lag methods.
-    assert all(len(values) >= 365 for values in history.values())
+    insufficient_history = [
+        key for key, values in history.items() if len(values) < 365
+    ]
+
+    if insufficient_history:
+        raise ValueError(
+            "Insufficient historical data for "
+            f"{len(insufficient_history)} store-item combinations."
+        )
 
     # Actual validation sales are used only for evaluation.
-    (
-        validation
-        .set_index(["date", "store", "item"])["sales"]
-        .to_dict()
-    )
-
     methods = ["lag_7", "lag_365", "rolling_7"]
 
     prediction_results = {}
@@ -140,7 +131,6 @@ def main():
     print("=" * 45)
 
     for method in methods:
-
         print(f"Running {method}...")
 
         predictions = run_recursive_baseline(
@@ -152,14 +142,11 @@ def main():
         prediction_results[method] = predictions
 
     # Create a common evaluation dataset.
-    results = validation[
-        ["date", "store", "item", "sales"]
-    ].copy()
+    results = validation[["date", "store", "item", "sales"]].copy()
 
     results = results.rename(columns={"sales": "actual"})
 
     for method in methods:
-
         prediction_df = prediction_results[method]
 
         prediction_df = prediction_df.rename(
@@ -173,6 +160,14 @@ def main():
             validate="one_to_one",
         )
 
+    for method in methods:
+        prediction_column = f"{method}_prediction"
+
+        if results[prediction_column].isna().any():
+            raise ValueError(
+                f"Missing predictions found for baseline method: {method}"
+            )
+
     # Calculate evaluation metrics.
     metric_rows = []
 
@@ -180,7 +175,6 @@ def main():
     print("=" * 60)
 
     for method in methods:
-
         prediction_column = f"{method}_prediction"
 
         metrics = calculate_metrics(
@@ -188,10 +182,12 @@ def main():
             results[prediction_column],
         )
 
-        metric_rows.append({
-            "Model": method,
-            **metrics,
-        })
+        metric_rows.append(
+            {
+                "Model": method,
+                **metrics,
+            }
+        )
 
         print(f"\n{method.upper()}")
         print(f"MAE:   {metrics['MAE']:.4f}")
