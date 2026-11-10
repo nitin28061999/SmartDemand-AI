@@ -23,6 +23,82 @@ These are the scores reported after submission. The validation metrics in
 `reports/xgboost/metrics.csv` are measured on the separate 90-day holdout and
 should not be compared directly with the Kaggle leaderboard score.
 
+## Historical demand forecasting validation
+
+This experiment evaluates the historical Store Item Demand dataset separately
+from the synthetic forecasting pipeline.
+
+### Dataset and methodology
+
+- 913,000 historical daily sales observations
+- 10 stores and 50 items (500 store-item pairs)
+- Date range: January 1, 2013 – December 31, 2017
+- Three chronological rolling-origin validation folds
+- Each fold forecasts 30 days recursively across all 500 store-item pairs
+- 15,000 predictions per fold; 45,000 predictions in total
+
+| Fold | Validation period |
+| --- | --- |
+| Fold 1 | April 2 – May 1, 2016 |
+| Fold 2 | July 1 – July 30, 2016 |
+| Fold 3 | October 3 – November 1, 2016 |
+
+A separate XGBoost model is trained for each fold using only engineered
+training observations dated before that fold's validation period. Predictions
+are generated recursively, so future actual sales are not fed into the
+forecasting history.
+
+The evaluation compares XGBoost against three recursive baselines using the
+same validation periods: 7-day lag, 365-day lag, and 7-day rolling average.
+
+### Pooled evaluation results
+
+Metrics are calculated across all 45,000 validation predictions.
+
+| Model | MAE | RMSE | RMSLE |
+| --- | ---: | ---: | ---: |
+| **XGBoost** | **6.3517** | **8.2537** | **0.1483** |
+| 7-day lag | 9.7856 | 12.7622 | 0.2274 |
+| 7-day rolling average | 10.7542 | 14.3072 | 0.2270 |
+| 365-day lag | 12.7435 | 16.6107 | 0.2794 |
+
+Across these folds, XGBoost achieved:
+- 35.1% lower MAE than the best baseline for MAE (7-day lag).
+- 35.3% lower RMSE than the best baseline for RMSE (7-day lag).
+- 34.7% lower RMSLE than the best baseline for RMSLE (7-day rolling average).
+
+**Evaluation scope:** All three rolling-origin folds fall within 2016. These
+results demonstrate performance on the tested periods; they do not establish
+performance across every year, season, or production environment. This
+experiment is separate from the 90-day holdout and Kaggle leaderboard results
+reported above, and from the synthetic demand forecasting experiment below.
+
+### Reproduce the validation
+
+The commands require the historical raw dataset and the engineered feature
+file at `data/processed/train_features.csv`.
+
+```bash
+python src/models/rolling_origin_validation.py
+python src/models/rolling_origin_baseline_validation.py
+```
+
+The first command trains three fold-specific validation models; it does not
+retrain or replace the final production model. The second command evaluates
+the recursive baselines and compares them with the saved XGBoost fold
+predictions.
+
+### Evaluation artifacts
+
+Generated CSV results are written locally to:
+
+- `reports/rolling_origin/`
+- `reports/rolling_origin_baselines/`
+
+These report directories are excluded by the default Git ignore rules.
+The aggregate metrics above are documented here so the experiment's results
+remain visible in the repository README.
+
 ## Synthetic demand forecasting experiment
 
 SmartDemand AI also includes a separate synthetic retail demand forecasting
