@@ -49,6 +49,9 @@ def _build_synthetic_artifacts(model_path: Path, history_path: Path):
 
 # Keep tests independent of production artifacts and AWS.
 os.environ.pop("S3_BUCKET", None)
+os.environ.pop("API_KEY", None)
+os.environ.pop("METRICS_API_KEY", None)
+os.environ["ENVIRONMENT"] = "development"
 
 _test_dir = Path(tempfile.mkdtemp(prefix="smartdemand-test-"))
 _model = _test_dir / "model.joblib"

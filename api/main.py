@@ -88,15 +88,22 @@ def log_event(event: str, **fields):
 
 def require_api_key(key: str | None = Security(api_key_header)):
     expected = os.getenv("API_KEY")
+
     if not expected:
+        if os.getenv("ENVIRONMENT", "development").lower() == "production":
+            raise HTTPException(
+                status_code=503,
+                detail="API authentication is not configured",
+            )
         return
+
     if not key or not hmac.compare_digest(key, expected):
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if os.getenv("ENVIRONMENT") == "production" and not os.getenv("API_KEY"):
+    if os.getenv("ENVIRONMENT", "development").lower() == "production" and not os.getenv("API_KEY"):
         raise RuntimeError("API_KEY must be set when ENVIRONMENT=production")
 
     MODEL_LOADED.set(0)

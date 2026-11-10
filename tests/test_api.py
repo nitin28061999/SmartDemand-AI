@@ -1,6 +1,8 @@
+import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from api.main import app, state
+from api.main import app, require_api_key, state
 
 
 def test_health():
@@ -52,6 +54,57 @@ def test_forecast_requires_key_when_configured(monkeypatch):
         )
         assert client.get("/health").status_code == 200
 
+
+
+def test_forecast_allows_missing_key_in_development(monkeypatch):
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("API_KEY", raising=False)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/forecast",
+            json={"store": 1, "item": 1, "horizon_days": 3},
+        )
+
+    assert response.status_code == 200
+
+
+def test_production_authentication_rejects_missing_api_key(monkeypatch):
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.delenv("API_KEY", raising=False)
+
+    with pytest.raises(HTTPException) as error:
+        require_api_key(None)
+
+    assert error.value.status_code == 503
+    assert error.value.detail == "API authentication is not configured"
+
+
+def test_production_startup_rejects_missing_api_key(monkeypatch):
+    monkeypatch.setenv("ENVIRONMENT", "PRODUCTION")
+    monkeypatch.delenv("API_KEY", raising=False)
+
+    with pytest.raises(
+        RuntimeError,
+        match="API_KEY must be set when ENVIRONMENT=production",
+    ):
+        with TestClient(app):
+            pass
+
+
+def test_production_forecast_accepts_valid_api_key(monkeypatch):
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("API_KEY", "production-test-key")
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/forecast",
+            json={"store": 1, "item": 1, "horizon_days": 3},
+            headers={"X-API-Key": "production-test-key"},
+        )
+
+    assert response.status_code == 200
+    assert len(response.json()["predictions"]) == 3
 
 def test_unknown_store_item_returns_404():
     with TestClient(app) as client:
