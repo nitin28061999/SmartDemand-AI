@@ -1,0 +1,84 @@
+{
+    "data_source": "synthetic",
+    "disclosure": "Model trained on artificially generated retail demand. Metrics do not represent real-world retailer performance.",
+    "model": "XGBoost Regressor",
+    "validation_method": "Chronological 90-day one-step-ahead validation using observed preceding-day sales.",
+    "training_rows": 320500,
+    "validation_rows": 45000,
+    "training_start": "2024-11-09",
+    "training_end": "2026-08-11",
+    "validation_start": "2026-08-12",
+    "validation_end": "2026-11-09",
+    "features": [
+        "year",
+        "month",
+        "day",
+        "day_of_week",
+        "day_of_year",
+        "week_of_year",
+        "is_weekend",
+        "lag_7",
+        "lag_14",
+        "lag_28",
+        "lag_365",
+        "rolling_mean_7",
+        "rolling_mean_14",
+        "rolling_mean_30"
+    ],
+    "mae": 5.895477771759033,
+    "rmse": 8.196160548054936,
+    "wape_percent": 10.84858026405302,
+    "smape_percent": 10.822373509040307,
+    "model_parameters": {
+        "n_estimators": 300,
+        "max_depth": 8,
+        "learning_rate": 0.05,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "random_state": 42
+    },
+    "top_features": [
+        {
+            "feature": "rolling_mean_30",
+            "importance": 0.639652669429779
+        },
+        {
+            "feature": "is_weekend",
+            "importance": 0.1535368114709854
+        },
+        {
+            "feature": "rolling_mean_14",
+            "importance": 0.09061635285615921
+        },
+        {
+            "feature": "rolling_mean_7",
+            "importance": 0.05362967029213905
+        },
+        {
+            "feature": "day_of_week",
+            "importance": 0.03994334116578102
+        },
+        {
+            "feature": "week_of_year",
+            "importance": 0.0036287258844822645
+        },
+        {
+            "feature": "day_of_year",
+            "importance": 0.0035196254029870033
+        },
+        {
+            "feature": "lag_28",
+            "importance": 0.0029157930985093117
+        },
+        {
+            "feature": "lag_365",
+            "importance": 0.002745978534221649
+        },
+        {
+            "feature": "lag_14",
+            "importance": 0.0025298376567661762
+        }
+    ],
+    "trained_at_utc": "2026-11-10T08:18:21.788332+00:00",
+    "model_path": "models\\synthetic\\xgboost_synthetic_model.joblib"
+}

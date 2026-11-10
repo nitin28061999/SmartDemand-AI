@@ -21,5 +21,29 @@ reports/
 deployment/monitoring/secrets/
 deployment/monitoring/monitoring.env
 
+<<<<<<< HEAD
 # Alertmanager SMTP credentials
 deployment/monitoring/alertmanager.env
+=======
+# Synthetic portfolio data: regenerate locally; do not commit generated datasets
+data/synthetic/*
+!data/synthetic/metadata.json
+
+# Keep reports ignored by default; selectively publish synthetic evaluation artifacts
+!reports/
+reports/*
+!reports/synthetic/
+reports/synthetic/*
+!reports/synthetic/final_model_metadata.json
+!reports/synthetic/training_metrics.json
+
+# Publish baseline comparison report and compact metrics
+!reports/synthetic/baseline_comparison/
+reports/synthetic/baseline_comparison/*
+!reports/synthetic/baseline_comparison/MODEL_EVALUATION_REPORT.md
+!reports/synthetic/baseline_comparison/baseline_comparison_summary.json
+!reports/synthetic/baseline_comparison/metrics_overall.csv
+!reports/synthetic/baseline_comparison/metrics_by_horizon.csv
+!reports/synthetic/baseline_comparison/metrics_by_origin.csv
+!reports/synthetic/baseline_comparison/*.png
+>>>>>>> 171094b (Add synthetic demand forecasting and evaluation pipeline)

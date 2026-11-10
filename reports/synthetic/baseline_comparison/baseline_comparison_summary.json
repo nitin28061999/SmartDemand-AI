@@ -1,0 +1,40 @@
+{
+    "data_source": "synthetic",
+    "disclosure": "All observations are artificially generated for a portfolio demonstration. Results do not represent real retailer transactions or real-world performance.",
+    "evaluation_method": "Same rolling origins, seven-day recursive horizon, store-item combinations, and actual observations.",
+    "backtest_origins": 12,
+    "store_item_combinations": 500,
+    "forecast_horizon_days": 7,
+    "predictions_per_model": 42000,
+    "models": [
+        "xgboost",
+        "seasonal_naive_lag_7",
+        "moving_average_7"
+    ],
+    "overall_metrics": [
+        {
+            "model": "moving_average_7",
+            "records": 42000,
+            "MAE": 7.047754050544562,
+            "RMSE": 9.587406495942854,
+            "WAPE_percent": 13.033707786472837,
+            "sMAPE_percent": 12.9799726975749
+        },
+        {
+            "model": "seasonal_naive_lag_7",
+            "records": 42000,
+            "MAE": 8.255595238095237,
+            "RMSE": 11.326735124095936,
+            "WAPE_percent": 15.267419260809184,
+            "sMAPE_percent": 15.11642113890899
+        },
+        {
+            "model": "xgboost",
+            "records": 42000,
+            "MAE": 5.869279183841887,
+            "RMSE": 8.156988945534911,
+            "WAPE_percent": 10.854304683562574,
+            "sMAPE_percent": 10.830436755264659
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "data_source": "synthetic",
+    "data_type": "simulated_daily_retail_sales",
+    "disclosure": "All sales observations are artificially generated for a portfolio demonstration. They are not real retailer transactions or actual customer demand.",
+    "generated_at_utc": "2026-11-10T08:14:55.628699+00:00",
+    "start_date": "2023-11-10",
+    "end_date": "2026-11-09",
+    "number_of_stores": 10,
+    "number_of_items": 50,
+    "records": 548000,
+    "frequency": "daily",
+    "random_seed": 42,
+    "simulation_features": [
+        "store_and_item_demand_variation",
+        "weekday_and_weekend_patterns",
+        "annual_seasonality",
+        "gradual_demand_growth",
+        "simulated_promotional_spikes",
+        "random_daily_variation"
+    ]
+}

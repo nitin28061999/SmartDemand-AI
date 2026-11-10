@@ -23,6 +23,75 @@ These are the scores reported after submission. The validation metrics in
 `reports/xgboost/metrics.csv` are measured on the separate 90-day holdout and
 should not be compared directly with the Kaggle leaderboard score.
 
+## Synthetic demand forecasting experiment
+
+SmartDemand AI also includes a separate synthetic retail demand forecasting
+pipeline to demonstrate time-series feature engineering, model training,
+recursive forecasting, and baseline evaluation.
+
+**Dataset disclosure:** This experiment uses artificially generated sales
+observations for portfolio demonstration purposes. It does not represent
+real retailer transactions or actual customer demand.
+
+### Dataset
+
+- 548,000 simulated daily sales records
+- 10 stores and 50 items
+- Date range: November 10, 2023 – November 9, 2026
+- Calendar, lag, and rolling-window features
+- Leakage-aware chronological training and validation
+
+### Model evaluation
+
+The XGBoost model was evaluated using a seven-day recursive backtest across
+12 rolling forecast origins and compared against two baseline approaches.
+
+| Model | MAE | RMSE | WAPE |
+| --- | ---: | ---: | ---: |
+| XGBoost | 5.87 | 8.16 | 10.85% |
+| Moving Average (7-day) | 7.05 | 9.59 | 13.03% |
+| Seasonal Naive (7-day lag) | 8.26 | 11.33 | 15.27% |
+
+XGBoost achieved:
+
+- 16.72% lower WAPE than the moving-average baseline.
+- 28.91% lower WAPE than the seasonal-naive baseline.
+- The lowest MAE, RMSE, WAPE, and sMAPE across all seven forecast horizons.
+
+These results apply only to the synthetic dataset and should not be interpreted
+as real-world demand forecasting performance.
+
+### Reproduce the experiment
+
+Run the following scripts from the repository root in the configured Python
+environment:
+
+```powershell
+python src/data/generate_synthetic_data.py
+python src/features/build_synthetic_features.py
+python src/models/train_synthetic_model.py
+python src/models/train_synthetic_final_model.py
+python src/inference/forecast_all_synthetic.py
+python src/models/evaluate_synthetic_recursive.py
+python src/models/compare_synthetic_baselines.py
+python src/models/generate_synthetic_evaluation_report.py
+```
+
+### Evaluation artifacts
+
+The generated evaluation report and charts are available under:
+
+`reports/synthetic/baseline_comparison/`
+
+- `MODEL_EVALUATION_REPORT.md` — detailed methodology and results
+- `metrics_overall.csv` — overall model comparison
+- `metrics_by_horizon.csv` — seven-day horizon evaluation
+- `metrics_by_origin.csv` — rolling-origin evaluation
+- PNG charts — visual model comparisons
+
+Generated datasets, model binaries, and detailed prediction-level CSVs are
+excluded from Git to keep the repository lightweight.
+
 ## Run locally
 
 Use Python 3.13. Install the API dependencies:
