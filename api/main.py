@@ -1,7 +1,6 @@
 import hmac
 import json
 import logging
-import os
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -19,6 +18,7 @@ from prometheus_client import (
 )
 from pydantic import BaseModel, Field
 
+from config.settings import Settings
 from src.inference.predict import DemandForecaster
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -34,7 +34,7 @@ metrics_credentials = Security(metrics_bearer)
 def require_metrics_api_key(
     credentials: HTTPAuthorizationCredentials | None = metrics_credentials,
 ):
-    expected = os.getenv("METRICS_API_KEY")
+    expected = Settings.from_env().metrics_api_key
 
     if not expected:
         raise HTTPException(
@@ -87,10 +87,11 @@ def log_event(event: str, **fields):
 
 
 def require_api_key(key: str | None = Security(api_key_header)):
-    expected = os.getenv("API_KEY")
+    settings = Settings.from_env()
+    expected = settings.api_key
 
     if not expected:
-        if os.getenv("ENVIRONMENT", "development").lower() == "production":
+        if settings.is_production:
             raise HTTPException(
                 status_code=503,
                 detail="API authentication is not configured",
@@ -103,8 +104,7 @@ def require_api_key(key: str | None = Security(api_key_header)):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if os.getenv("ENVIRONMENT", "development").lower() == "production" and not os.getenv("API_KEY"):
-        raise RuntimeError("API_KEY must be set when ENVIRONMENT=production")
+    Settings.from_env().validate_startup()
 
     MODEL_LOADED.set(0)
 
@@ -120,7 +120,7 @@ async def lifespan(app: FastAPI):
     state.clear()
 
 
-docs_on = os.getenv("ENABLE_DOCS", "true").lower() == "true"
+docs_on = Settings.from_env().docs_enabled
 
 app = FastAPI(
     title="SmartDemand AI",

@@ -1,4 +1,3 @@
-import os
 import tempfile
 from pathlib import Path
 
@@ -6,14 +5,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[2]
-
-LOCAL_MODEL_PATH = Path(
-    os.getenv("MODEL_PATH", ROOT / "models" / "xgboost_final_model.joblib")
-)
-LOCAL_HISTORY_FILE = Path(
-    os.getenv("HISTORY_FILE", ROOT / "data" / "serving" / "history.csv")
-)
+from config.settings import Settings
 
 FEATURES = [
     "year",
@@ -38,16 +30,17 @@ MIN_HISTORY_LENGTH = 365
 
 def resolve_artifacts():
     """Resolve local artifacts or download model and history from S3."""
-    bucket = os.getenv("S3_BUCKET")
+    settings = Settings.from_env()
+    bucket = settings.s3_bucket
 
     if not bucket:
-        return LOCAL_MODEL_PATH, LOCAL_HISTORY_FILE
+        return settings.model_path, settings.history_file
 
     import boto3
 
-    region = os.getenv("AWS_REGION", "ap-southeast-2")
-    model_key = os.getenv("MODEL_KEY", "models/xgboost_final_model.joblib")
-    history_key = os.getenv("HISTORY_KEY", "serving/history.csv")
+    region = settings.aws_region
+    model_key = settings.model_key
+    history_key = settings.history_key
 
     cache = Path(tempfile.gettempdir()) / "smartdemand"
     cache.mkdir(parents=True, exist_ok=True)

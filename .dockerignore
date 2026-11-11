@@ -1,11 +1,22 @@
-.venv*/
+.venv/
+.venv-*/
 .git/
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Preserve required serving history
 data/*
 !data/serving/
 data/serving/*
 !data/serving/history.csv
+
+# Preserve the trained model
 models/*
 !models/xgboost_final_model.joblib
+
+# Exclude development and generated files
 mlruns/
 mlflow.db
 notebooks/
@@ -14,4 +25,3 @@ logs/
 nb/
 sub_data/
 tests/
-__pycache__/
