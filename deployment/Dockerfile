@@ -15,6 +15,7 @@ WORKDIR /app
 COPY requirements-api.txt .
 RUN pip install --no-cache-dir -r requirements-api.txt
 
+COPY config ./config
 COPY src ./src
 COPY api ./api
 
