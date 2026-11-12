@@ -17,17 +17,26 @@ class SmartDemandAPI:
     """Server-side client for the SmartDemand FastAPI service."""
 
     def __init__(self) -> None:
-        secrets = getattr(st, "secrets", {})
+        secret_url = None
+        secret_key = None
+
+        # Read Streamlit secrets safely.
+        try:
+            secret_url = st.secrets.get("SMARTDEMAND_API_URL")
+            secret_key = st.secrets.get("SMARTDEMAND_API_KEY")
+        except Exception:
+            # Local execution may not have a secrets.toml file.
+            pass
 
         self.base_url = (
             os.getenv("SMARTDEMAND_API_URL")
-            or secrets.get("SMARTDEMAND_API_URL")
+            or secret_url
             or DEFAULT_API_URL
         ).rstrip("/")
 
         self.api_key = (
             os.getenv("SMARTDEMAND_API_KEY")
-            or secrets.get("SMARTDEMAND_API_KEY")
+            or secret_key
         )
 
         self.session = requests.Session()
