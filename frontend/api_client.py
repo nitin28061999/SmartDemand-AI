@@ -4,7 +4,7 @@ import os
 from typing import Any
 
 import requests
-
+import streamlit as st
 
 DEFAULT_API_URL = "http://32.236.49.254:18001"
 
@@ -17,17 +17,21 @@ class SmartDemandAPI:
     """Server-side client for the SmartDemand FastAPI service."""
 
     def __init__(self) -> None:
-        self.base_url = os.getenv(
-            "SMARTDEMAND_API_URL",
-            DEFAULT_API_URL,
+        secrets = getattr(st, "secrets", {})
+
+        self.base_url = (
+            os.getenv("SMARTDEMAND_API_URL")
+            or secrets.get("SMARTDEMAND_API_URL")
+            or DEFAULT_API_URL
         ).rstrip("/")
 
-        self.api_key = os.getenv("SMARTDEMAND_API_KEY")
+        self.api_key = (
+            os.getenv("SMARTDEMAND_API_KEY")
+            or secrets.get("SMARTDEMAND_API_KEY")
+        )
 
         self.session = requests.Session()
-        self.session.headers.update(
-            {"Accept": "application/json"}
-        )
+        self.session.headers.update({"Accept": "application/json"})
 
     def health_check(self) -> dict[str, Any]:
         """Check whether the production API and model are healthy."""
