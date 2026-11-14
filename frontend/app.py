@@ -3,9 +3,7 @@
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-
 from api_client import SmartDemandAPI, SmartDemandAPIError
-
 
 st.set_page_config(
     page_title="SmartDemand AI | Demand Forecasting",
@@ -80,6 +78,11 @@ with st.sidebar:
     except SmartDemandAPIError as error:
         st.error("Production API: Unavailable")
         st.caption(str(error))
+        if error.__cause__:
+            st.caption(
+                f"Diagnostic: {type(error.__cause__).__name__}: "
+                f"{error.__cause__}"
+            )
 
     st.divider()
     st.caption("Powered by FastAPI, XGBoost and AWS")
@@ -223,8 +226,8 @@ if "forecast_df" in st.session_state:
     )
 
     fig.update_traces(
-        line=dict(width=3),
-        marker=dict(size=8),
+        line={"width": 3},
+        marker={"size": 8},
         hovertemplate=(
             "Date: %{x|%d %b %Y}<br>"
             "Predicted sales: %{y:.2f} units"
@@ -236,7 +239,7 @@ if "forecast_df" in st.session_state:
         paper_bgcolor="#0b1120",
         plot_bgcolor="#111827",
         font_color="#e5e7eb",
-        margin=dict(l=20, r=20, t=60, b=20),
+        margin={"l": 20, "r": 20, "t": 60, "b": 20},
         hovermode="x unified",
     )
 
